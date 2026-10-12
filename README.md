@@ -122,10 +122,10 @@ docker compose down
 Quando a API estiver configurada:
 
 ```bash
-pnpm --filter api start:dev
+pnpm --filter backend start:dev
 ```
 
-O comando depende do nome efetivo do pacote em `apps/api/package.json`.
+O comando depende do nome efetivo do pacote em `apps/backend/package.json`.
 
 ### 6. Executar aplicações web e mobile
 
