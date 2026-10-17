@@ -1,0 +1,45 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  validate:
+    name: Validate monorepo
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11.25.0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Backend tests
+        run: pnpm --filter backend exec vitest run
+
+      - name: Backend build
+        run: pnpm --filter backend build
+
+      - name: Web tests
+        run: pnpm --filter web exec ng test --watch=false
+
+      - name: Web build
+        run: pnpm --filter web build
+
+      - name: Mobile TypeScript
+        run: pnpm --filter mobile exec tsc --noEmit

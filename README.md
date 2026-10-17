@@ -1,78 +1,3 @@
-# Nexora
-
-> Plataforma SaaS B2B para gerenciamento de solicitações internas entre colaboradores, equipes e organizações.
-
-A **Nexora** é um projeto de estudo e portfólio Full Stack, desenvolvido para praticar construção de produtos reais, arquitetura de software, SQL, testes automatizados, integração contínua e colaboração com GitHub Issues e Pull Requests.
-
-> **Status:** em desenvolvimento. Este README descreve a visão do produto e a estrutura planejada; nem todos os módulos e comandos estão disponíveis ainda.
-
-## Visão do produto
-
-A Nexora pretende centralizar solicitações internas de uma organização, permitindo acompanhar responsáveis, prioridades, andamento e histórico de atendimento.
-
-### Funcionalidades planejadas
-
-- **Organizações:** isolamento de dados por organização (_multi-tenancy_).
-- **Usuários e equipes:** cadastro e gerenciamento de colaboradores e responsáveis.
-- **Solicitações:** abertura, categorização e acompanhamento de demandas.
-- **Atendimento:** triagem, atribuição, priorização e resolução.
-- **Histórico:** registro das mudanças de estado e ações relevantes.
-- **Indicadores:** métricas de atendimento e acompanhamento de solicitações.
-
-### Fluxo de negócio proposto
-
-1. Um colaborador abre uma solicitação.
-2. Um responsável faz a triagem e define prioridade e equipe.
-3. Um atendente assume e trabalha na solicitação.
-4. O atendente registra a resolução.
-5. O solicitante confirma a solução ou contesta o resultado.
-6. O histórico permanece disponível para auditoria.
-
-## Stack tecnológica
-
-| Camada         | Tecnologias                                      |
-| -------------- | ------------------------------------------------ |
-| Backend        | Node.js, TypeScript, NestJS                      |
-| Web            | Angular, TypeScript                              |
-| Mobile         | React Native, Expo                               |
-| Banco de dados | MySQL 8.4 LTS                                    |
-| Acesso a dados | SQL explícito com `mysql2` (sem ORM nesta fase)  |
-| Ambiente local | Docker Compose                                   |
-| Monorepo       | pnpm workspaces, Turborepo                       |
-| Qualidade e CI | Testes automatizados, GitHub Actions (planejado) |
-
-**Decisão de aprendizado:** a primeira implementação de persistência utilizará SQL diretamente para aprofundar modelagem relacional, `JOIN`, transações, índices, consultas parametrizadas e análise de desempenho.
-
-## Estrutura do repositório
-
-Estrutura **prevista** para o monorepo (pode evoluir conforme as Issues):
-
-```text
-nexora/
-├── apps/
-│   ├── api/                # API NestJS
-│   ├── web/                # Aplicação Angular
-│   └── mobile/             # Aplicação React Native / Expo
-├── packages/               # Pacotes compartilhados (quando necessários)
-├── .github/
-│   └── workflows/          # Integração contínua
-├── compose.yaml            # MySQL local (planejado)
-├── pnpm-workspace.yaml
-├── turbo.json
-├── package.json
-└── README.md
-```
-
-## Pré-requisitos
-
-- **Node.js 24 LTS**
-- **pnpm** (usar a versão indicada pelo campo `packageManager` do `package.json`)
-- **Git**
-- **Docker Desktop + Docker Compose** para o MySQL local
-- Para desenvolvimento mobile: **Expo Go** ou emulador Android/iOS configurado
-
-> Em Windows, execute os comandos no PowerShell ou em um terminal compatível. Para o app mobile, requisitos adicionais dependem do dispositivo/emulador utilizado.
-
 ## Configuração local
 
 ### 1. Clonar o repositório
@@ -84,79 +9,143 @@ cd nexora-suporte
 
 ### 2. Instalar as dependências
 
+O projeto utiliza Node.js 24 e pnpm 11.25.0.
+
 ```bash
-pnpm install
+pnpm install --frozen-lockfile
 ```
 
-### 3. Configurar variáveis de ambiente
+### 3. Configurar as variáveis de ambiente
 
-Quando os arquivos de exemplo estiverem disponíveis, copie os `.env.example` para `.env` nos diretórios correspondentes e configure os valores locais.
+Na raiz do monorepo, copie `.env.example` para `.env`.
 
-Exemplo de variáveis **planejadas** para o banco:
+No PowerShell:
+
+```powershell
+Copy-Item .env.example .env
+Copy-Item apps/backend/.env.example apps/backend/.env
+```
+
+Configure as credenciais do banco de dados nos dois arquivos.
+
+**Docker Compose — `.env` da raiz:**
 
 ```dotenv
-MYSQL_HOST=127.0.0.1
 MYSQL_PORT=3306
 MYSQL_DATABASE=nexora
-MYSQL_USER=nexora_app
+MYSQL_USER=nexora_user
 MYSQL_PASSWORD=defina_uma_senha_local
 MYSQL_ROOT_PASSWORD=defina_outra_senha_local
 ```
 
-**Segurança:** não envie arquivos `.env`, senhas reais ou outros segredos para o Git. Os nomes finais das variáveis serão definidos na implementação das Issues de infraestrutura.
+**NestJS — `apps/backend/.env`:**
 
-### 4. Iniciar o MySQL
+```dotenv
+PORT=3000
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_USER=nexora_user
+DB_PASSWORD=defina_uma_senha_local
+DB_NAME=nexora
+```
 
-Após a conclusão da configuração do Docker Compose (NEX-006):
+A senha `DB_PASSWORD` deve corresponder à `MYSQL_PASSWORD`.
+
+Nunca versione arquivos `.env` com credenciais reais.
+
+### 4. Iniciar o banco de dados
 
 ```bash
 docker compose up -d
-# Consultar os logs
-docker compose logs -f mysql
-# Parar os serviços sem apagar os volumes
+docker compose ps
+```
+
+O MySQL utiliza um volume persistente para preservar os dados.
+
+Para encerrar os serviços sem remover o volume:
+
+```bash
 docker compose down
 ```
 
-### 5. Executar as migrations do banco de dados
-
-Após configurar as variáveis de ambiente e iniciar o MySQL, execute as migrations para preparar a estrutura do banco de dados.
-
-No diretório da API, execute:
+### 5. Executar as migrations
 
 ```bash
-cd apps/api
-pnpm db:migrate
+pnpm --filter backend db:migrate
 ```
 
-O comando executa os arquivos SQL de migration que ainda não foram aplicados ao banco.
+O executor consulta a tabela `schema_migrations`, identifica migrations pendentes e executa os arquivos SQL ainda não registrados.
 
-As migrations são utilizadas para versionar alterações na estrutura do banco de dados, como criação de tabelas, índices e relacionamentos.
+Migrations já registradas não são executadas novamente.
 
-**Controle de execução:**
-
-- As migrations são executadas na ordem definida pelos arquivos.
-- Cada migration executada é registrada na tabela `schema_migrations`.
-- Migrations já registradas não são executadas novamente.
-- Os arquivos SQL são versionados no Git, permitindo acompanhar a evolução da estrutura do banco.
-
-Para consultar o histórico de migrations executadas:
-
-```sql
-SELECT * FROM schema_migrations;
-```
-
-**Observação:** `db:migrate` executa migrations existentes. Novos arquivos de migration devem ser criados separadamente.
-
-### 6. Executar a API
-
-Após executar as migrations, inicie a API NestJS:
+### 6. Executar o backend
 
 ```bash
-pnpm start:dev
+pnpm --filter backend start:dev
 ```
 
-Execute esse comando no diretório `apps/api`, desde que o script esteja configurado no `package.json`.
+Endpoint inicial:
 
-### 7. Executar aplicações web e mobile
+`GET http://localhost:3000/health`
 
-Os comandos específicos de Angular e Expo serão adicionados após a inicialização de cada aplicação.
+### 7. Executar o frontend
+
+```bash
+pnpm --filter web start
+```
+
+A aplicação Angular fica disponível, por padrão, em:
+
+`http://localhost:4200`
+
+### 8. Executar o mobile
+
+O aplicativo utiliza React Native com Expo.
+
+Após confirmar a configuração do workspace mobile:
+
+```bash
+pnpm --filter mobile start
+```
+
+Para compilar e executar no Android:
+
+```bash
+pnpm --filter mobile exec expo run:android
+```
+
+### 9. Executar os testes
+
+Backend:
+
+```bash
+pnpm --filter backend test
+```
+
+Frontend:
+
+```bash
+pnpm --filter web exec ng test --watch=false
+```
+
+### 10. Validar os builds
+
+Backend:
+
+```bash
+pnpm --filter backend build
+```
+
+Frontend:
+
+```bash
+pnpm --filter web build
+```
+
+A compilação nativa Android depende da configuração do SDK, JDK e ferramentas de build.
+
+## Fluxo de desenvolvimento
+
+O projeto utiliza GitHub Issues, branches por atividade e Pull Requests para integração das alterações.
+
+As modificações devem passar por testes e validação antes do merge na branch `main`.
