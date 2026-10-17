@@ -117,77 +117,46 @@ docker compose logs -f mysql
 docker compose down
 ```
 
-### 5. Executar a API
+### 5. Executar as migrations do banco de dados
 
-Quando a API estiver configurada:
+Após configurar as variáveis de ambiente e iniciar o MySQL, execute as migrations para preparar a estrutura do banco de dados.
+
+No diretório da API, execute:
 
 ```bash
-pnpm --filter backend start:dev
+cd apps/api
+pnpm db:migrate
 ```
 
-O comando depende do nome efetivo do pacote em `apps/backend/package.json`.
+O comando executa os arquivos SQL de migration que ainda não foram aplicados ao banco.
 
-### 6. Executar aplicações web e mobile
+As migrations são utilizadas para versionar alterações na estrutura do banco de dados, como criação de tabelas, índices e relacionamentos.
 
-Os comandos específicos de Angular e Expo serão adicionados após a inicialização de cada aplicação (NEX-004 e NEX-005).
+**Controle de execução:**
 
-## Qualidade de código
+- As migrations são executadas na ordem definida pelos arquivos.
+- Cada migration executada é registrada na tabela `schema_migrations`.
+- Migrations já registradas não são executadas novamente.
+- Os arquivos SQL são versionados no Git, permitindo acompanhar a evolução da estrutura do banco.
 
-Cada aplicação deve disponibilizar scripts adequados de **lint**, **testes** e **build**. O pipeline de CI (NEX-008) verificará essas tarefas em Pull Requests direcionados à branch principal.
+Para consultar o histórico de migrations executadas:
 
-A execução centralizada via Turborepo será documentada após sua configuração e validação no ambiente de desenvolvimento.
-
-## Organização do trabalho
-
-O desenvolvimento é acompanhado no GitHub por meio de **Issues**, **Projects**, **Sprints** e **Pull Requests**.
-
-### Convenções sugeridas
-
-- Issues: `[NEX-001] Descrição da atividade`
-- Branches: `feat/NEX-007-descricao`, `chore/NEX-008-descricao`, `fix/NEX-000-descricao`
-- Commits: [Conventional Commits](https://www.conventionalcommits.org/)
-
-Exemplos:
-
-```text
-feat(api): adiciona endpoint de solicitações
-fix(api): corrige validação de prioridade
-chore(ci): configura workflow de testes
-docs: atualiza instruções de instalação
+```sql
+SELECT * FROM schema_migrations;
 ```
 
-### Fluxo de contribuição
+**Observação:** `db:migrate` executa migrations existentes. Novos arquivos de migration devem ser criados separadamente.
 
-1. Escolher uma Issue priorizada para a Sprint.
-2. Criar uma branch específica para a atividade.
-3. Implementar a mudança e os testes pertinentes.
-4. Executar as verificações disponíveis localmente.
-5. Abrir um Pull Request vinculando a Issue.
-6. Revisar e integrar a alteração na branch principal.
+### 6. Executar a API
 
-## Roadmap inicial
+Após executar as migrations, inicie a API NestJS:
 
-| Issue   | Objetivo                                               |
-| ------- | ------------------------------------------------------ |
-| NEX-001 | Inicializar monorepo com pnpm workspaces               |
-| NEX-002 | Configurar Turborepo e scripts                         |
-| NEX-003 | Inicializar API NestJS e Health Check                  |
-| NEX-004 | Inicializar aplicação Angular                          |
-| NEX-005 | Inicializar React Native com Expo                      |
-| NEX-006 | Configurar MySQL com Docker Compose                    |
-| NEX-007 | Implementar persistência com `mysql2` e migrations SQL |
-| NEX-008 | Documentação, variáveis de ambiente e CI               |
+```bash
+pnpm start:dev
+```
 
-A distribuição dessas atividades entre Sprints será ajustada conforme a capacidade e o progresso do projeto.
+Execute esse comando no diretório `apps/api`, desde que o script esteja configurado no `package.json`.
 
-## Objetivos de aprendizado
+### 7. Executar aplicações web e mobile
 
-- Projetar APIs e aplicações Full Stack com TypeScript.
-- Praticar SQL, modelagem relacional e otimização de consultas.
-- Aplicar separação de responsabilidades e princípios de arquitetura quando fizerem sentido.
-- Desenvolver testes automatizados e pipelines de CI.
-- Trabalhar com versionamento, revisão de código e planejamento ágil.
-
-## Licença
-
-Licença ainda não definida.
+Os comandos específicos de Angular e Expo serão adicionados após a inicialização de cada aplicação.
